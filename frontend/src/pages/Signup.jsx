@@ -1,20 +1,57 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from "axios";
 
 function Signup() {
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [msg,setMsg]=useState("");
 
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        console.log("Username:", username);
-        console.log("Email:", email);
-        console.log("Password:", password);
-        navigate('/login');
+
+    const handleSubmit = async(e) => {
+      e.preventDefault(); //always at first
+
+       if(!username||!email||!password)
+       {
+            setMsg("Please fill all the fields.");
+            return; //stop further execution
+       }
+       
+
+       try{
+        const response=await axios.post(
+            "http://localhost:5000/api/auth/register",
+            {
+                username:username,
+                email:email,
+                password_hash:password
+            }
+        );//all key value pairs must match with the database name
+
+        console.log(response.data);
+
+        //redirect after success
+        navigate("/login");
+       }
+       catch(error)
+       {
+        //this block catches any error that axios may send
+        console.log(error);
+
+        //axios has an object .response which gets any error data from the server
+        if(error.response)
+        {
+            alert(error.response.data.message);
+        }
+        else
+        {
+            alert("Server Error");
+        }
+       }
     };
 
     return (
@@ -82,6 +119,8 @@ function Signup() {
                     </form>
                 </div>
             </section>
+
+            {msg && <p style={{ color: "red" }}>{msg}</p>}
 
             <footer className="p-8 text-center text-gray-400">
                 &copy; 2026 Quiz System

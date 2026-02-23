@@ -1,19 +1,57 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from "axios";
 
 function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [msg,setMsg]=useState("");
+
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // For now, we just log the email and password to the console
-        console.log("Email:", email);
-        console.log("Password:", password);
-        
-        navigate('/home');
+
+         if(!email||!password)
+       {
+            setMsg("Please fill all the fields.");
+            return; //stop further execution
+       }
+
+       try{
+        const response=await axios.post(
+            "http://localhost:5000/api/auth/login",
+            {
+                email:email,
+                password_hash:password
+            }
+        );
+
+        console.log(response.data);
+
+        const token = response.data.token; // JWT from backend
+
+        // store in localStorage
+        localStorage.setItem("token", token);
+        console.log(localStorage.getItem("token"));
+        //redirect after success
+        navigate("/home");
+
+       }
+       catch(error)
+       {
+        console.log(error);
+
+        if(error.response)
+        {
+            alert(error.response.data.message);
+        }
+         else
+        {
+            alert("Server Error");
+        }
+       }
     };
 
     return (
@@ -67,7 +105,10 @@ function Login() {
                         </button>
                     </form>
                 </div>
+                {msg && <p className="text-red-500 font-semibold mt-2">{msg}</p>}
             </section>
+
+            
 
             <footer className="p-8 text-center text-gray-400">
                 &copy; 2026 Quiz System

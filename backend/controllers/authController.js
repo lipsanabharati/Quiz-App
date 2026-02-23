@@ -15,10 +15,17 @@ exports.register=(req,res)=>{
 
     //to check if user already exists
     User.findByEmail(email,(err,result)=>{
-        if(result.length>0)
+        if(err)
+        {
+            console.log(err);
+            return res.status(500).json({
+                message:"database error"
+            })
+        }
+        if(result && result.length>0)
         {
             return res.status(400).json({
-                message:"User already exists",
+                message:"user already exists",
             });
         }
         else
@@ -100,7 +107,7 @@ exports.login=(req,res)=>{
 
         //if there is a match,create unique jwt token
         const token=jwt.sign(
-            { id:user.id,email:user.email },
+            { id:user.user_id,email:user.email },
             process.env.JWT_SECRET,
             {expiresIn: "1d"}
         );
@@ -110,7 +117,7 @@ exports.login=(req,res)=>{
             message:"login successfull",
             token,
             user:{
-                id:user.id,
+                id:user.user_id,
                 username:user.username,
                 email:user.email,
             },

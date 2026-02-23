@@ -1,6 +1,35 @@
 import { Link } from 'react-router-dom';
+import QuizCard from '../components/quizCard';
+import { useState,useEffect } from 'react';
+import axios from "axios";
 
 function Home() {
+     const [quizzes, setQuizzes] = useState([]);
+
+    useEffect(() => {
+    const fetchQuizzes = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const res = await axios.get(
+          "http://localhost:5000/api/quiz/",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+
+        console.log(res.data); // see structure
+        setQuizzes(res.data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchQuizzes();
+  }, []);
+
     return (
         <div className="min-h-screen bg-gray-50 font-sans">
             <header className="bg-white shadow-sm p-4">
@@ -20,32 +49,19 @@ function Home() {
                 </section>
 
                 <section>
-                    <h3 className="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Available Quizzes</h3>
+                 <h3 className="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Available Quizzes</h3>
+
+                 {quizzes.map((quiz) => (
+                        <QuizCard
+                        key={quiz.quiz_id}
+                        title={quiz.title}
+                        category={quiz.category}
+                        time={`${quiz.time_limit} seconds`}
+                        link={`/quiz/${quiz.quiz_id}`}
+                        />
+                    ))}
                     
-                    {/* Quiz Card */}
-                    <div className="bg-white border border-gray-200 p-6 rounded-xl shadow-sm hover:shadow-md transition max-w-sm">
-                        <h4 className="text-lg font-bold text-gray-800 mb-4">Basic General Knowledge</h4>
-                        <ul className="text-sm text-gray-600 space-y-2 mb-6">
-                            <li className="flex justify-between">
-                                <span className="font-semibold text-gray-500">Category:</span> 
-                                <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold uppercase">GK</span>
-                            </li>
-                            <li className="flex justify-between">
-                                <span className="font-semibold text-gray-500">Time Limit:</span> 
-                                <span>45 seconds</span>
-                            </li>
-                            <li className="flex justify-between">
-                                <span className="font-semibold text-gray-500">Points:</span> 
-                                <span>5</span>
-                            </li>
-                        </ul>
-                        <Link 
-                            to='/quiz1' 
-                            className='block text-center bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition'
-                        >
-                            Start Quiz
-                        </Link>
-                    </div>
+                    
                 </section>
 
                 <footer className="mt-20 py-8 text-center text-gray-400 border-t border-gray-100">

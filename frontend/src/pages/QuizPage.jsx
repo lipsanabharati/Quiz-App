@@ -1,6 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
+import { useParams,useEffect,useState } from "react";
 
-function Quiz1() {
+function Quiz() {
+
     const navigate = useNavigate();
 
     const handleFinishQuiz = () => {
@@ -72,4 +74,4 @@ function Quiz1() {
     );
 }
 
-export default Quiz1;
+export default Quiz;

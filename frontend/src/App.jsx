@@ -3,7 +3,7 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Home from "./pages/Home";
-import Quiz1 from "./pages/quiz1";
+import Quiz from "./pages/QuizPage";
 import Result from "./pages/Result";
 
 
@@ -19,7 +19,7 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/home" element={<Home />} />
 
-        <Route path="/quiz1" element={<Quiz1 />} />
+        <Route path="/quiz/:id" element={<Quiz />} />
 
         <Route path="/result" element={<Result />} />
         
