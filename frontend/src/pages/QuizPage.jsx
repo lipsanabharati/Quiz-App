@@ -3,11 +3,36 @@ import { useParams,useEffect,useState } from "react";
 
 function Quiz() {
 
+    //1. Grab the ID from the URL
+    const { quizId } = useParams();
+
+    const [quizData, setQuizData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    //2. Fetch quiz data based on the ID from the API
+    useEffect(() => {
+        // This function runs when the page loads 
+        const fetchQuiz = async () => {
+            try {
+                const response = await fetch ('http://localhost:5000/api/quiz/${quizId}');
+                const data = await response.json();
+                setQuizData(data);
+                setLoading(false);
+            } catch (error) {
+                console.error("Error fetching quiz data:" , error);
+            }
+        }
+         fetchQuiz();
+    }, [quizId]);  // Dependency array ensures this runs when quizId changes
+
     const navigate = useNavigate();
 
     const handleFinishQuiz = () => {
         navigate('/result');
     };
+
+    if (loading) return <div className="p-10">Loading Quiz...</div>;
+    if (!quizData) return <div className="p-10">Quiz not found!</div>;
 
     return (
         <div className="min-h-screen bg-purple-50 font-sans">
@@ -21,11 +46,10 @@ function Quiz() {
             </nav>
 
             <main className="max-w-3xl mx-auto p-6 mt-8">
-                {/* Quiz Card */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
                     
-                    {/* Title and Metadata */}
                     <div className="mb-8">
+                        {/* Dynmaic Title from API }
                         <h1 className="text-2xl font-bold text-gray-800 mb-4">Basic General Knowledge Quiz</h1>
                         <div className="flex gap-4 text-sm text-gray-500 font-medium bg-gray-50 p-3 rounded-lg">
                             <span className="flex items-center gap-1">📂 Category: <span className="text-indigo-600">GK</span></span>
