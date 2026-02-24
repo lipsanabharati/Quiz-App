@@ -4,11 +4,8 @@ function Result() {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const { userScore, title, attempts } = location.state || { 
-        userScore: 0, 
-        title: "Quiz Result", 
-        attempts: 1 
-    };
+    const { userScore, title, attempts } = location.state;
+    console.log(attempts);
 
     return (
         <div className="min-h-screen from-gray-50 via-white to-gray-50 flex flex-col items-center justify-center font-sans p-6">

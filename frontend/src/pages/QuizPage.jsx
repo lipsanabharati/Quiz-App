@@ -66,26 +66,78 @@ function Quiz() {
     };
 
     const handleFinishQuiz = async () => {
-        let score = 0;
-        quizData.forEach((item) => {
-            if (item.is_correct === 1 && selectedAnswers[item.que_id] === item.option_text) {
-                score += item.points;
+    let score = 0;
+
+    // ✅ 1. Calculate score
+    quizData.forEach((item) => {
+        if (
+            item.is_correct === 1 &&
+            selectedAnswers[item.que_id] === item.option_text
+        ) {
+            score += item.points;
+        }
+    });
+
+    try {
+        const token = localStorage.getItem("token");
+
+        // ✅ 2. INSERT attempt
+        const insertRes = await axios.post(
+            "http://localhost:5000/api/quiz/attempt",
+            {
+                quiz_id: id,
+                score: score
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
+
+        const attemptId = insertRes.data.attempt_id;
+
+        console.log(attemptId);
+
+        // ✅ 3. FETCH updated attempt count
+        const attemptRes = await axios.get(
+            `http://localhost:5000/api/quiz/${id}/results`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
+
+        // ⚠️ depends on your backend response format
+        const totalAttempts = attemptRes.data[0].total_attempts || 0;
+        
+        console.log(totalAttempts);
+
+        // ✅ 4. Navigate to result page
+        navigate("/result", {
+            state: {
+                userScore: score,
+                title: quizData[0]?.title || "Quiz Result",
+                attempts: totalAttempts,
+                //attemptId: attemptId
             }
         });
 
-        try {
-            const token = localStorage.getItem("token");
-            const attemptRes = await axios.get(`http://localhost:5000/api/attempts/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const totalAttempts = attemptRes.data.length || 1;
-            navigate('/result', { 
-                state: { userScore: score, title: quizData[0]?.title || "Quiz Result", attempts: totalAttempts } 
-            });
-        } catch (err) {
-            navigate('/result', { state: { userScore: score, attempts: 1 } });
-        }
-    };
+    } catch (err) {
+        console.error("Error saving attempt:", err);
+
+        // fallback navigation
+        navigate("/result", {
+            state: {
+                userScore: score,
+                title: quizData[0]?.title || "Quiz Result",
+                attempts: 1,
+                error: "Failed to save attempt"
+            }
+        });
+    }
+};
 
     if (loading) return <div className="p-10 text-center font-sans text-indigo-600">Loading Quiz...</div>;
 

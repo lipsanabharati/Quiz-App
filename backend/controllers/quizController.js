@@ -61,3 +61,31 @@ exports.showAttempts=(req,res)=>{
     })
 
 }
+
+exports.addAttempt=(req,res)=>{
+     const user_id=req.user.id;
+     const { quiz_id, score } = req.body;
+
+     // Validation
+  if (!user_id || !quiz_id || score === undefined) {
+    return res.status(400).json({
+      message: "Missing required fields"
+    });
+  }
+
+  const data = { user_id, quiz_id, score };
+
+  Quiz.createAttempt(data, (err, result) => {
+    if (err) {
+      return res.status(500).json({
+        message: "Database error",
+        error: err
+      });
+    }
+
+    res.status(201).json({
+      message: "Attempt saved successfully",
+      attempt_id: result.insertId
+    });
+  });
+}

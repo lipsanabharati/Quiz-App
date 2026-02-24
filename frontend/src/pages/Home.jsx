@@ -12,6 +12,7 @@ function Home() {
         const fetchQuizzes = async () => {
             try {
                 const token = localStorage.getItem("token");
+                console.log(token);
                 if (!token) return;
 
                 const res = await axios.get("http://localhost:5000/api/quiz/", {

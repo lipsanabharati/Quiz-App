@@ -24,3 +24,18 @@ exports.getAttempts=(quiz_id,user_id,callback)=>{
         callback(null,results);
     });
 };
+
+exports.createAttempt=(data,callback)=>{
+  const { user_id, quiz_id, score } = data;
+
+  const sql = `
+    INSERT INTO attempts (user_id, quiz_id, score, attempt_time)
+    VALUES (?, ?, ?, NOW())
+  `;
+
+    db.query(sql, [user_id, quiz_id, score], (err, result) => {
+    if (err) return callback(err, null);
+
+    callback(null, result);
+  });
+};
