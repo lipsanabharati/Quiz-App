@@ -48,7 +48,7 @@ function Result() {
                         onClick={() => navigate('/quiz1')}
                         className="w-full bg-white text-indigo-600 border-2 border-indigo-50 py-4 rounded-2xl font-bold hover:bg-indigo-50 transition-all"
                     >
-                        Re-take Quiz 1
+                        Re-take Quiz 
                     </button>
                 </div>
             </div>

@@ -1,118 +1,142 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import axios from "axios"; // Import Axios
+import axios from "axios";
 
 function Quiz() {
-    const { quizId } = useParams();
+    const { id } = useParams(); 
     const navigate = useNavigate();
 
-    const [quiz, setQuizData] = useState(null);
+    const [quizData, setQuizData] = useState([]); 
     const [loading, setLoading] = useState(true);
     const [selectedAnswers, setSelectedAnswers] = useState({});
+    
+    // 1. ADD THIS: This was missing in your snippet!
+    const [timeLeft, setTimeLeft] = useState(45); 
 
+    // 2. HELPER: Convert "00:00:45" to 45
+    const parseTimeToSeconds = (timeStr) => {
+        if (!timeStr) return 45; 
+        const [hours, minutes, seconds] = timeStr.split(':').map(Number);
+        return (hours * 3600) + (minutes * 60) + seconds;
+    };
+
+    // 3. FETCH DATA: One effect is enough
     useEffect(() => {
         const fetchQuiz = async () => {
             try {
-                // Axios automatically converts the response to JSON
-                const response = await axios.get(`http://localhost:5000/api/quiz/${quizId}`);
-                
-                // In Axios, the data is inside the 'data' property
-                setQuizData(response.data); 
+                const token = localStorage.getItem("token");
+                const response = await axios.get(`http://localhost:5000/api/quiz/${id}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                const data = response.data;
+                setQuizData(data);
+
+                // Set initial time from the API response
+                if (data.length > 0 && data[0].time_limit) {
+                    const totalSeconds = parseTimeToSeconds(data[0].time_limit);
+                    setTimeLeft(totalSeconds);
+                }
+
                 setLoading(false);
             } catch (error) {
                 console.error("Error fetching quiz data:", error);
-                // Check if it's a 404 or server error
-                if (error.response && error.response.status === 404) {
-                    alert("Quiz not found!");
-                }
                 setLoading(false);
             }
         };
         fetchQuiz();
-    }, [quizId]);
+    }, [id]);
 
-    const handleOptionClick = (questionIndex, optionText) => {
+    // 4. THE TIMER HEARTBEAT
+    useEffect(() => {
+        if (loading || quizData.length === 0) return;
+
+        if (timeLeft <= 0) {
+            handleFinishQuiz();
+            return;
+        }
+
+        const timer = setInterval(() => {
+            setTimeLeft(prev => prev - 1);
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [timeLeft, loading, quizData]); 
+
+    const handleOptionClick = (queId, optionText) => {
         setSelectedAnswers(prev => ({
             ...prev,
-            [questionIndex]: optionText
+            [queId]: optionText 
         }));
     };
 
     const handleFinishQuiz = () => {
         let score = 0;
-        quiz.questions.forEach((q, index) => {
-            if (selectedAnswers[index] === q.correct_ans) {
-                score += quiz.points;
+        quizData.forEach((item) => {
+            // Check if this row is the correct one AND if user selected it
+            if (item.is_correct === 1 && selectedAnswers[item.que_id] === item.option_text) {
+                score += item.points;
             }
         });
 
         navigate('/result', { 
             state: { 
-                userScore: score, 
-                totalPossible: quiz.questions.length * quiz.points,
-                title: quiz.title 
+                userScore: score,
+                title: quizData[0]?.title || "Quiz Result" 
             } 
         });
     };
 
     if (loading) return <div className="p-10 text-center font-sans text-indigo-600">Loading Quiz...</div>;
-    if (!quiz) return <div className="p-10 text-center font-sans text-red-500">Quiz not found!</div>;
+    if (!quizData.length) return <div className="p-10 text-center font-sans text-red-500">Quiz not found!</div>;
 
     return (
         <div className="min-h-screen bg-purple-50 font-sans">
             <nav className="bg-white shadow-sm p-4">
-                <div className="max-w-3xl mx-auto">
-                    <Link to="/home" className="text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-2">
-                        ← Back to Home
-                    </Link>
+                <div className="max-w-3xl mx-auto text-indigo-600">
+                    <Link to="/home">← Back to Home</Link>
                 </div>
             </nav>
 
             <main className="max-w-3xl mx-auto p-6 mt-8">
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-                    <div className="mb-8">
-                        <h1 className="text-2xl font-bold text-gray-800 mb-4">{quiz.title}</h1>
-                        <div className="flex gap-4 text-sm text-gray-500 font-medium bg-gray-50 p-3 rounded-lg">
-                            <span>📂 Category: <span className="text-indigo-600">{quiz.category}</span></span>
-                            <span>⏱️ Time: <span className="text-indigo-600">{quiz.time_limit}</span></span>
-                            <span>🏆 Points: <span className="text-indigo-600">{quiz.points}</span></span>
-                        </div>
+                    <h1 className="text-2xl font-bold text-gray-800 mb-8">{quizData[0]?.title}</h1>
+
+                    {/* TIMER DISPLAY */}
+                    <div className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold transition-colors mb-6 ${
+                        timeLeft <= 10 ? "bg-red-300 text-red-800 animate-pulse" : "bg-indigo-50 text-indigo-600"
+                    }`}>
+                        <span>⏱️ Time Remaining:</span>
+                        <span>
+                            {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                        </span>
                     </div>
 
-                    <hr className="mb-8 border-gray-100" />
+                    <div className="space-y-4">
+                        {quizData.map((item, index) => {
+                            const showTitle = index === 0 || quizData[index - 1].que_id !== item.que_id;
+                            const isSelected = selectedAnswers[item.que_id] === item.option_text;
 
-                    <div className="space-y-10">
-                        {quiz.questions && quiz.questions.map((q, qIndex) => (
-                            <div key={qIndex} className="space-y-4">
-                                <p className="text-lg font-semibold text-gray-800">
-                                    <span className="text-indigo-600 mr-2">Question {qIndex + 1}:</span>
-                                    {q.ques_text}
-                                </p>
-                                <div className="grid grid-cols-1 gap-3">
-                                    {q.options.map((option, index) => {
-                                        const isSelected = selectedAnswers[qIndex] === option;
-                                        return (
-                                            <button 
-                                                key={index}
-                                                onClick={() => handleOptionClick(qIndex, option)}
-                                                className={`w-full text-left p-4 border rounded-xl transition-all flex items-center ${
-                                                    isSelected 
-                                                    ? "border-indigo-600 bg-indigo-50 ring-2 ring-indigo-200" 
-                                                    : "border-gray-200 hover:border-indigo-400 hover:bg-gray-50"
-                                                }`}
-                                            >
-                                                <span className={`inline-block w-8 h-8 rounded-full text-center leading-8 mr-3 text-sm font-bold ${
-                                                    isSelected ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-600"
-                                                }`}>
-                                                    {String.fromCharCode(65 + index)}
-                                                </span>
-                                                {option}
-                                            </button>
-                                        );
-                                    })}
+                            return (
+                                <div key={index} className={showTitle ? "mt-8" : ""}>
+                                    {showTitle && (
+                                        <p className="text-lg font-semibold text-gray-800 mb-4 pt-4 border-t border-gray-50">
+                                            {item.ques_text}
+                                        </p>
+                                    )}
+                                    <button 
+                                        onClick={() => handleOptionClick(item.que_id, item.option_text)}
+                                        className={`w-full text-left p-4 mb-2 border rounded-xl transition-all ${
+                                            isSelected 
+                                            ? "border-indigo-600 bg-indigo-50 ring-2 ring-indigo-200" 
+                                            : "border-gray-200 hover:border-indigo-400"
+                                        }`}
+                                    >
+                                        {item.option_text}
+                                    </button>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     <div className="mt-10 pt-6 border-t border-gray-100 flex justify-end">
